@@ -18,6 +18,8 @@ r = 0.8                          #Rayon de la bille
 b = 0.013                        #Ecartement des rails
 h = np.sqrt(r**2-(b**2/4))       #Distance entre les rails et le contre de gravité de la bille
 e = 0.004                        #Paramètre de frottement calculé grâce à la simulation 2D
+bloque = False                   #Pour savoir si la bille fait bien tout le circuit
+timebloque = 0                   #Temps où la bille bloque
 
 xyzPoints = np.loadtxt('looping_points.txt', unpack=True, skiprows=1)    #Chargement des points de passages
 
@@ -65,7 +67,7 @@ plt.show()
 #----------Simulation----------#
 
 #paramètres de la simulation
-tEnd = 10      #Durée de la simulation en secondes 
+tEnd = 100      #Durée de la simulation en secondes
 dt = 0.1       #Durée entre chaque prise de valeure 
 
 #Initialisation des variables de simulation
@@ -88,6 +90,7 @@ sSim[0] = 0
 VsSim[0] = 0
 
 i = 0
+bloquetext = ""
 
 with open("Donnes_simulation_.txt", "w") as file:
     file.write("tSim \t VsSim \t sSim[i] \t\t coordonnées \n")
@@ -103,29 +106,55 @@ while i < steps:
     Gn = np.linalg.norm(Gn)
 
     As = (gs - ((e*VsSim[i])/h) * Gn)/(1+((2*r**2)/(5*h**2)))
-    
+
     xSim[i] = X[0]
     ySim[i] = X[1]
     zSim[i] = X[2]
+
+    if i > 1:
+        if xSim[i] == xSim[i-1] and ySim[i] == ySim[i-1] and zSim[i] == zSim[i-1]: #si la bille reste au même endroit on écourte la simulation en temps
+            xSim = xSim[:i]
+            ySim = ySim[:i]
+            zSim = zSim[:i]
+            VsSim = VsSim[:i]
+            tSim = tSim[:i]
+            sSim = sSim[:i]
+            break
+        elif zSim[i] < zSim[i-1]: #trouver le point le plus bas pour mettre à jour le référentiel pour l'énergie potentielle gravifique
+            lowzsim = zSim[i]
     
     VsSim[i+1] = VsSim[i] + As * dt
     sSim[i+1] = sSim[i] + VsSim[i+1] * dt
     tSim[i+1] = tSim[i] + dt
+    if bloque != True:
+        if sSim[i]<sSim[i-1]: #pour voir si la bille n'est pas bloqué
+            bloque = True
+            timebloque = i * dt
+            bloquetext = "la bille est bloquée en {} s".format(timebloque)
+
+    if i+1 == steps: #pour prendre en compte le cas steps
+        xSim[i+1] = X[0]
+        ySim[i+1] = X[1]
+        zSim[i+1] = X[2]
     
     with open("Donnes_simulation_.txt", "a") as file:
         file.write("{0:.3f} \t {1:.3f} \t {2:.3f} \t ({3:.2f},{4:.2f},{5:.2f}) \n".format(tSim[i], VsSim[i], sSim[i], xSim[i], ySim[i], zSim[i]))
+
     i = i+1
-    
+"""
 with open("Donnes_simulation_.txt", "a") as file:
     file.write("{0:.3f} \t {1:.3f} \t {2:.3f} \t ({3:.2f},{4:.2f},{5:.2f}) \n".format(tSim[i], VsSim[i], sSim[i], xSim[i], ySim[i], zSim[i]))
+"""
 
-    
+print(timebloque)
+print(lowzsim)
 # plot distance et vitesse et hauteur
 plt.figure()
 plt.subplot(311)
 plt.plot(tSim, sSim, label='s')
 plt.ylabel('s [m]')
 plt.xlabel('t [s]')
+plt.text(timebloque,0, bloquetext)
 plt.subplot(312)
 plt.plot(tSim, VsSim, label='vs')
 plt.ylabel('Vs [m/s]')
@@ -136,7 +165,7 @@ plt.ylabel('z [m]')
 plt.xlabel('t [s]')
 plt.show()
 
-EpSim = 9.81*zSim*m # énergie potentielle spécifique [m**2/s**2]
+EpSim = 9.81*(zSim-lowzsim)*m # énergie potentielle spécifique [m**2/s**2]
 EkSim = 0.5*m*VsSim**2  # énergie cinétique spécifique [m**2/s**2]
 
 # plot énergies
