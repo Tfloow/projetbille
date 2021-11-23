@@ -5,11 +5,12 @@ Version du 20-11-21
 UCLouvain, Cours de projet 1, LEPL1501, année 2021-2022
 """
 
-#Import des bibliothèques et programmes annexes 
+
+#Import des bibliothèques et programmes annexes
 import path3d as p3d                      #Programme annexe : fornis par les professe
 import numpy as np                        #Package numpy
 import matplotlib.pyplot as plt           #Package matplotlib
-from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.mplot3d import Axes3D
 
 #Paramètres physiques du circuit
 g = np.array([0,0, -9.81])       #Constante de gravité
@@ -23,17 +24,17 @@ timebloque = 0                   #Temps où la bille bloque
 
 xyzPoints = np.loadtxt('looping_points.txt', unpack=True, skiprows=1)    #Chargement des points de passages
 
-path = p3d.path(xyzPoints)
+path = p3d.path(xyzPoints)       #création du tracée à partir des points fournis
 
-sPath, X, T, C = path
-sPath_geo, xyzPath_geo, TPath_geo, CPath_geo = path
+sPath, X, T, C = path            #attribution des valeurs à chacune des variables
+sPath_geo, xyzPath_geo, TPath_geo, CPath_geo = path #on répète afin de réaliser différentes oppérations
 
 
 
-#----------Affichage du circuit grâce à matplolib----------#
+#----------Affichage du circuit grâce à matplol ib----------#
 num = 30                         # nombre de jalons
-length = sPath_geo[-1]
-sMarks = np.linspace(0, length, num)
+length = sPath_geo[-1]           # longueur circuit déroulé
+sMarks = np.linspace(0, length, num) #subdivision de la longueur en n parties égales
 xyzMarks = np.empty((3, num))    # coordonnées
 TMarks = np.empty((3, num))      # vecteur tangent
 CMarks = np.empty((3, num))      # vecteur de courbure
@@ -46,13 +47,13 @@ for i in range(num):
     xyzMarks[:,i] = xyz
     CMarks[:,i] = C
     TMarks[:,i] = T
-    
+
 # graphique 3D : points, chemin et vecteurs
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.set_box_aspect(np.ptp(xyzPath_geo, axis=1))
 ax.plot(xyzPoints[0],xyzPoints[1],xyzPoints[2],'bo', label='points')
-ax.plot(xyzPath_geo[0],xyzPath_geo[1],xyzPath_geo[2], 'k-', lw=0.5, label='path')    
+ax.plot(xyzPath_geo[0],xyzPath_geo[1],xyzPath_geo[2], 'k-', lw=0.5, label='path')
 scale = 0.5*length/num
 ax.quiver(xyzMarks[0],xyzMarks[1],xyzMarks[2],
           scale*TMarks[0],scale*TMarks[1],scale*TMarks[2],
@@ -60,7 +61,7 @@ ax.quiver(xyzMarks[0],xyzMarks[1],xyzMarks[2],
 ax.quiver(xyzMarks[0],xyzMarks[1],xyzMarks[2],
           scale*CMarks[0],scale*CMarks[1],scale*CMarks[2],
           color='g', linewidth=0.5, label='C')
-ax.legend()            
+ax.legend()
 plt.show()
 
 
@@ -68,7 +69,7 @@ plt.show()
 
 #paramètres de la simulation
 tEnd = 100      #Durée de la simulation en secondes
-dt = 0.1       #Durée entre chaque prise de valeure 
+dt = 0.1       #Durée entre chaque prise de valeure
 
 #Initialisation des variables de simulation
 steps = int(tEnd / dt)         # nombre de pas de la simulation
@@ -89,30 +90,30 @@ tSim[0] = 0
 sSim[0] = 0
 VsSim[0] = 0
 
-i = 0
-bloquetext = ""
+i = 0                           # valeur qui va permettre de suivre l'évolution tout les i temps
+bloquetext = ""                 # création d'un texte vide qui se remplira si notre bille n'avance plus
 
 with open("Donnes_simulation_.txt", "w") as file:
-    file.write("tSim \t VsSim \t sSim[i] \t\t coordonnées \n")
-    
+    file.write("tSim \t VsSim \t sSim[i] \t\t coordonnées \n") # écriture de l'entête de notre fichier
+
 # boucle de simulation:
 while i < steps:
     X, T, C = p3d.path_at(sSim[i], path)
-    gs = np.dot(g, T)
+    gs = np.dot(g, T)           # utilisation des formules fournies dans les documents de physique
     gsT = gs * T
     gn = g - gsT
     VsC = (VsSim[i]**2) * C
     Gn = VsC - gn
     Gn = np.linalg.norm(Gn)
 
-    As = (gs - ((e*VsSim[i])/h) * Gn)/(1+((2*r**2)/(5*h**2)))
+    As = (gs - ((e*VsSim[i])/h) * Gn)/(1+((2*r**2)/(5*h**2))) # formule de l'accélération
 
     xSim[i] = X[0]
     ySim[i] = X[1]
     zSim[i] = X[2]
 
     if i > 1:
-        if xSim[i] == xSim[i-1] and ySim[i] == ySim[i-1] and zSim[i] == zSim[i-1]: #si la bille reste au même endroit on écourte la simulation en temps
+        if xSim[i] == xSim[i-1] and ySim[i] == ySim[i-1] and zSim[i] == zSim[i-1]: # si la bille reste au même endroit on écourte la simulation en temps
             xSim = xSim[:i]
             ySim = ySim[:i]
             zSim = zSim[:i]
@@ -120,41 +121,39 @@ while i < steps:
             tSim = tSim[:i]
             sSim = sSim[:i]
             break
-        elif zSim[i] < zSim[i-1]: #trouver le point le plus bas pour mettre à jour le référentiel pour l'énergie potentielle gravifique
+        elif zSim[i] < zSim[i-1]:           # trouver le point le plus bas pour mettre à jour le référentiel pour l'énergie potentielle gravifique
             lowzsim = zSim[i]
-    
-    VsSim[i+1] = VsSim[i] + As * dt
-    sSim[i+1] = sSim[i] + VsSim[i+1] * dt
-    tSim[i+1] = tSim[i] + dt
-    if bloque != True:
-        if sSim[i]<sSim[i-1]: #pour voir si la bille n'est pas bloqué
-            bloque = True
-            timebloque = i * dt
-            bloquetext = "la bille est bloquée en {} s".format(timebloque)
 
-    if i+1 == steps: #pour prendre en compte le cas steps
+    VsSim[i+1] = VsSim[i] + As * dt         # formule de la vitesse
+    sSim[i+1] = sSim[i] + VsSim[i+1] * dt   # formule pour l'accélération curviligne
+    tSim[i+1] = tSim[i] + dt                # avancement du temps
+    if not bloque and sSim[i] < sSim[i - 1]:# pour voir si la bille n'est pas bloqué
+        bloque = True
+        timebloque = i * dt
+        bloquetext = "la bille est bloquée en {} s".format(timebloque)
+
+    if i+1 == steps: # pour prendre en compte le cas steps
         xSim[i+1] = X[0]
         ySim[i+1] = X[1]
         zSim[i+1] = X[2]
-    
-    with open("Donnes_simulation_.txt", "a") as file:
+
+    with open("Donnes_simulation_.txt", "a") as file: # enregistrement des données dans un fichier texte
         file.write("{0:.3f} \t {1:.3f} \t {2:.3f} \t ({3:.2f},{4:.2f},{5:.2f}) \n".format(tSim[i], VsSim[i], sSim[i], xSim[i], ySim[i], zSim[i]))
 
-    i = i+1
+    i += 1
 """
 with open("Donnes_simulation_.txt", "a") as file:
     file.write("{0:.3f} \t {1:.3f} \t {2:.3f} \t ({3:.2f},{4:.2f},{5:.2f}) \n".format(tSim[i], VsSim[i], sSim[i], xSim[i], ySim[i], zSim[i]))
 """
 
-print(timebloque)
-print(lowzsim)
+
 # plot distance et vitesse et hauteur
 plt.figure()
 plt.subplot(311)
 plt.plot(tSim, sSim, label='s')
 plt.ylabel('s [m]')
 plt.xlabel('t [s]')
-plt.text(timebloque,0, bloquetext)
+plt.text(timebloque,0, bloquetext) # écrit sur le graphique au moment où la bille est bloquée avec le temps "testez avec looping_points1.txt pour voir"
 plt.subplot(312)
 plt.plot(tSim, VsSim, label='vs')
 plt.ylabel('Vs [m/s]')
