@@ -15,14 +15,15 @@ import matplotlib.pyplot as plt           #Package matplotlib
 #Paramètres physiques du circuit
 g = np.array([0,0, -9.81])       #Constante de gravité
 m = 0.005                        #Masse de la bille
-r = 0.8                          #Rayon de la bille
+r = 0.008                        #Rayon de la bille
 b = 0.013                        #Ecartement des rails
 h = np.sqrt(r**2-(b**2/4))       #Distance entre les rails et le contre de gravité de la bille
-e = 0.004                        #Paramètre de frottement calculé grâce à la simulation 2D
+e = 0.0004                       #Paramètre de frottement calculé grâce à la simulation 2D
+M = (1+((2*r**2)/(5*h**2)))      # coefficient d'inertie [1]
 bloque = False                   #Pour savoir si la bille fait bien tout le circuit
 timebloque = 0                   #Temps où la bille bloque
 
-xyzPoints = np.loadtxt('looping_points.txt', unpack=True, skiprows=1)    #Chargement des points de passages
+xyzPoints = np.loadtxt('C:\\Users\\thoma\OneDrive\\Bureau\\Circuit irl.txt', unpack=True, skiprows=1)    #Chargement des points de passages
 
 path = p3d.path(xyzPoints)       #création du tracée à partir des points fournis
 
@@ -68,8 +69,8 @@ plt.show()
 #----------Simulation----------#
 
 #paramètres de la simulation
-tEnd = 100      #Durée de la simulation en secondes
-dt = 0.1       #Durée entre chaque prise de valeure
+tEnd = 100     # Durée de la simulation en secondes
+dt = 0.001       # Durée entre chaque prise de valeure
 
 #Initialisation des variables de simulation
 steps = int(tEnd / dt)         # nombre de pas de la simulation
@@ -83,8 +84,6 @@ TSim = np.zeros(steps+1)       # valeurs du vecteur unitaire tangent
 CSim = np.zeros(steps+1)       # valeurs du vecteur unitaire radial
 As = np.zeros(steps+1)         # valeurs de l'accélération curviligne
 
-M = 1 + 2/5*r**2/h**2          # coefficient d'inertie [1]
-
 # valeurs initiales:
 tSim[0] = 0
 sSim[0] = 0
@@ -94,7 +93,7 @@ i = 0                           # valeur qui va permettre de suivre l'évolution
 bloquetext = ""                 # création d'un texte vide qui se remplira si notre bille n'avance plus
 
 with open("Donnes_simulation_.txt", "w") as file:
-    file.write("tSim \t VsSim \t sSim[i] \t\t coordonnées \n") # écriture de l'entête de notre fichier
+    file.write("tSim \t VsSim \t sSim[i] \t As\t\t coordonnées \n") # écriture de l'entête de notre fichier
 
 # boucle de simulation:
 while i < steps:
@@ -106,11 +105,16 @@ while i < steps:
     Gn = VsC - gn
     Gn = np.linalg.norm(Gn)
 
-    As = (gs - ((e*VsSim[i])/h) * Gn)/(1+((2*r**2)/(5*h**2))) # formule de l'accélération
+    As = (gs - (((e*VsSim[i])/h) * Gn))/(M) # formule de l'accélération
+    #As = (5*h*(h*gs-e*VsSim[i]*Gn))/((2*r**2 + 5*h**2))
 
     xSim[i] = X[0]
     ySim[i] = X[1]
     zSim[i] = X[2]
+
+    VsSim[i + 1] = VsSim[i] + As * dt  # formule de la vitesse
+    sSim[i + 1] = sSim[i] + VsSim[i+1] * dt    # formule pour l'accélération curviligne
+    tSim[i + 1] = tSim[i] + dt  # avancement du temps
 
     if i > 1:
         if xSim[i] == xSim[i-1] and ySim[i] == ySim[i-1] and zSim[i] == zSim[i-1]: # si la bille reste au même endroit on écourte la simulation en temps
@@ -124,9 +128,6 @@ while i < steps:
         elif zSim[i] < zSim[i-1]:           # trouver le point le plus bas pour mettre à jour le référentiel pour l'énergie potentielle gravifique
             lowzsim = zSim[i]
 
-    VsSim[i+1] = VsSim[i] + As * dt         # formule de la vitesse
-    sSim[i+1] = sSim[i] + VsSim[i+1] * dt   # formule pour l'accélération curviligne
-    tSim[i+1] = tSim[i] + dt                # avancement du temps
     if not bloque and sSim[i] < sSim[i - 1]:# pour voir si la bille n'est pas bloqué
         bloque = True
         timebloque = i * dt
@@ -138,14 +139,9 @@ while i < steps:
         zSim[i+1] = X[2]
 
     with open("Donnes_simulation_.txt", "a") as file: # enregistrement des données dans un fichier texte
-        file.write("{0:.3f} \t {1:.3f} \t {2:.3f} \t ({3:.2f},{4:.2f},{5:.2f}) \n".format(tSim[i], VsSim[i], sSim[i], xSim[i], ySim[i], zSim[i]))
+        file.write("{0:.3f} \t {1:.3f} \t {2:.3f} \t {3:.3f}\t ({4:.2f},{5:.2f},{6:.2f}) \n".format(tSim[i], VsSim[i], sSim[i],As, xSim[i], ySim[i], zSim[i]))
 
     i += 1
-"""
-with open("Donnes_simulation_.txt", "a") as file:
-    file.write("{0:.3f} \t {1:.3f} \t {2:.3f} \t ({3:.2f},{4:.2f},{5:.2f}) \n".format(tSim[i], VsSim[i], sSim[i], xSim[i], ySim[i], zSim[i]))
-"""
-
 
 # plot distance et vitesse et hauteur
 plt.figure()
@@ -164,8 +160,8 @@ plt.ylabel('z [m]')
 plt.xlabel('t [s]')
 plt.show()
 
-EpSim = 9.81*(zSim-lowzsim)*m # énergie potentielle spécifique [m**2/s**2]
-EkSim = 0.5*m*VsSim**2  # énergie cinétique spécifique [m**2/s**2]
+EpSim = 9.81*(zSim-lowzsim) # énergie potentielle spécifique [m**2/s**2]
+EkSim = 0.5*M*VsSim**2  # énergie cinétique spécifique [m**2/s**2]
 
 # plot énergies
 plt.figure()
@@ -175,4 +171,13 @@ plt.plot(tSim, EkSim+EpSim, 'k-', label='E/m')
 plt.legend()
 plt.ylabel('Energy/mass [J/kg]')
 plt.xlabel('t [s]')
+plt.show()
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.set_box_aspect(np.ptp(xyzPath_geo, axis=1))
+ax.plot(xSim,ySim,zSim,'bo', label='points')
+scale = 0.5*length/num
+
+ax.legend()
 plt.show()
