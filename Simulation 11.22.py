@@ -18,12 +18,12 @@ m = 0.005                        #Masse de la bille
 r = 0.008                        #Rayon de la bille
 b = 0.013                        #Ecartement des rails
 h = np.sqrt(r**2-(b**2/4))       #Distance entre les rails et le contre de gravité de la bille
-e = 0.0004                       #Paramètre de frottement calculé grâce à la simulation 2D
+e = 0.0004                       #Paramètre de frottement calculé grâce à la simulation 2D note:rajouter 2 0 ??
 M = (1+((2*r**2)/(5*h**2)))      # coefficient d'inertie [1]
 bloque = False                   #Pour savoir si la bille fait bien tout le circuit
 timebloque = 0                   #Temps où la bille bloque
 
-xyzPoints = np.loadtxt('C:\\Users\\thoma\OneDrive\\Bureau\\Circuit irl.txt', unpack=True, skiprows=1)    #Chargement des points de passages
+xyzPoints = np.loadtxt("C:\\Users\\thoma\\OneDrive\\Bureau\\Circuit irl.txt", unpack=True, skiprows=1)    #Chargement des points de passages
 
 path = p3d.path(xyzPoints)       #création du tracée à partir des points fournis
 
@@ -55,7 +55,7 @@ ax = fig.add_subplot(projection='3d')
 ax.set_box_aspect(np.ptp(xyzPath_geo, axis=1))
 ax.plot(xyzPoints[0],xyzPoints[1],xyzPoints[2],'bo', label='points')
 ax.plot(xyzPath_geo[0],xyzPath_geo[1],xyzPath_geo[2], 'k-', lw=0.5, label='path')
-scale = 0.5*length/num
+scale = 0.03*length/num
 ax.quiver(xyzMarks[0],xyzMarks[1],xyzMarks[2],
           scale*TMarks[0],scale*TMarks[1],scale*TMarks[2],
           color='r', linewidth=0.5, label='T')
@@ -70,7 +70,7 @@ plt.show()
 
 #paramètres de la simulation
 tEnd = 100     # Durée de la simulation en secondes
-dt = 0.001       # Durée entre chaque prise de valeure
+dt = 0.001     # Durée entre chaque prise de valeure
 
 #Initialisation des variables de simulation
 steps = int(tEnd / dt)         # nombre de pas de la simulation
@@ -172,7 +172,7 @@ plt.legend()
 plt.ylabel('Energy/mass [J/kg]')
 plt.xlabel('t [s]')
 plt.show()
-
+"""
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.set_box_aspect(np.ptp(xyzPath_geo, axis=1))
@@ -181,3 +181,4 @@ scale = 0.5*length/num
 
 ax.legend()
 plt.show()
+"""
